@@ -1,0 +1,101 @@
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: simple-echo-server
+  annotations:
+    description: ${APP_NAME} simple test server, written in Golang
+    tags: quickstart,golang,${APP_NAME}
+    iconClass: icon-golang
+labels:
+  template: ${APP_NAME}
+objects:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${APP_NAME}
+    annotations:
+      description: Exposes and load balances the application pods
+      service.alpha.openshift.io/serving-cert-secret-name: ${APP_NAME}
+  spec:
+    ports:
+    - name: 80-tcp
+      port: 80
+      targetPort: 8080
+    selector:
+      name: ${APP_NAME}
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: ${APP_NAME}
+    name: ${APP_NAME}
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations:
+        openshift.io/imported-from: quay.io/dedgar/${APP_NAME}:${APP_VER}
+      from:
+        kind: DockerImage
+        name: quay.io/dedgar/${APP_NAME}:${APP_VER}
+      importPolicy:
+        scheduled: true
+      name: "${APP_VER}"
+      referencePolicy:
+        type: Source
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: ${APP_NAME}
+    annotations:
+      description: Defines how to deploy the application server
+  spec:
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${APP_NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:${APP_VER}
+    - type: ConfigChange
+    replicas: 1
+    selector:
+      name: ${APP_NAME}
+    template:
+      metadata:
+        name: ${APP_NAME}
+        labels:
+          name: ${APP_NAME}
+      spec:
+        containers:
+        - name: ${APP_NAME}
+          image: quay.io/dedgar/${APP_NAME}:${APP_VER}
+          env:
+          - name: PAUSE_ON_START
+            value: "false"
+          - name: APP_PORT
+            value: ${APP_PORT}
+          - name: APP_VER
+            value: ${APP_VER}
+          ports:
+          - containerPort: ${APP_PORT}
+          volumeMounts: {}
+parameters:
+- name: APP_PORT
+  description: Port that the application will use to listen for connections
+  value: '8080'
+- name: APP_NAME
+  description: The name of the application to run from the start script and pull from the registry
+  value: 'simple-echo-server' 
+- name: APP_VER
+  description: The version of the application container. Used to pull images with this tag
+  value: 'v0.0.1'
+
