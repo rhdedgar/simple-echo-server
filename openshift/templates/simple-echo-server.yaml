@@ -16,11 +16,10 @@ objects:
     name: ${APP_NAME}
     annotations:
       description: Exposes and load balances the application pods
-      service.alpha.openshift.io/serving-cert-secret-name: ${APP_NAME}
   spec:
     ports:
-    - name: 80-tcp
-      port: 80
+    - name: 8080-tcp
+      port: 8080
       targetPort: 8080
     selector:
       name: ${APP_NAME}
@@ -86,8 +85,7 @@ objects:
           - name: APP_VER
             value: ${APP_VER}
           ports:
-          - containerPort: ${APP_PORT}
-          volumeMounts: {}
+          - containerPort: 8080
 parameters:
 - name: APP_PORT
   description: Port that the application will use to listen for connections
